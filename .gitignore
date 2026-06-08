@@ -1,0 +1,45 @@
+# Ignore local environment, secrets, and sensitive project material
+
+# Python / virtualenv
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / frontend if added later
+node_modules/
+dist/
+build/
+.next/
+
+# Environment and credentials
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+credentials/
+
+# Local caches and outputs
+.cache/
+outputs/
+artifacts/
+logs/
+*.log
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Sensitive raw project data should not be committed by default
+raw/
+private/
+client-data/
+real-project-documents/
