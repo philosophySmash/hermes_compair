@@ -1,0 +1,10 @@
+[project]
+name = "hermes-compair"
+version = "0.1.0"
+description = "Local project intelligence prototype for construction documents."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

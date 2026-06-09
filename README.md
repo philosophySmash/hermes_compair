@@ -6,12 +6,13 @@ The project concept is a “project brain” that can ingest construction projec
 
 ## Current Contents
 
-- `docs/construction_project_brain_plan.md` — research and implementation plan.
-- `AGENTS.md` — safety and behavior rules for AI agents working in this repo.
-- `samples/` — reserved for synthetic or sanitized sample data only.
-- `schemas/` — reserved for extraction/data schemas.
-- `src/` — reserved for future prototype code.
-- `tests/` — reserved for future tests.
+- `docs/construction_project_brain_plan.md` - research and implementation plan.
+- `AGENTS.md` - safety and behavior rules for AI agents working in this repo.
+- `samples/` - reserved for synthetic or sanitized sample data only.
+- `schemas/` - reserved for extraction/data schemas.
+- `src/hermes_compair/` - minimal Python package and CLI entry point.
+- `tests/test_smoke.py` - smoke test for package import and version metadata.
+- `pyproject.toml` - Python project metadata and pytest test path configuration.
 
 ## Core Principles
 
@@ -36,6 +37,20 @@ Start with one project folder and build a read-only prototype that can:
 - show a draft knowledge graph;
 - show a draft timeline;
 - propose updates for human approval.
+
+## Test and CLI Smoke Checks
+
+Run the package smoke test with pytest. Pytest is not installed or declared by this project, so install pytest in your local development environment before running this command:
+
+```bash
+PYTHONPATH=src python3 -m pytest tests/test_smoke.py -q
+```
+
+Show CLI help with:
+
+```bash
+PYTHONPATH=src python3 -m hermes_compair.cli --help
+```
 
 ## GitHub Upload Later
 
