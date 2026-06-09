@@ -2,9 +2,24 @@
 
 ## Goal
 
-Design and build a functioning project intelligence system for construction-sector projects. The system should ingest files and communications scattered across folder structures and channels, extract reliable project knowledge, show a knowledge graph of the whole project, maintain a timeline of deliverables, and propose or apply task/timeline updates when new emails, meeting minutes, notes, contracts, drawings, and other documentation arrive.
+Design and build a functioning project intelligence system for construction-sector projects. The system should ingest files and communications scattered across folder structures and channels, extract reliable project knowledge, show a knowledge graph of the whole project, maintain a timeline of deliverables, and propose task/timeline updates when new emails, meeting minutes, notes, contracts, drawings, and other documentation arrive. Applying updates should require human approval unless the update is explicitly classified as low-risk metadata and the user has enabled that mode.
 
 The recommended approach is not to blindly upload all documents into a model. Instead, the system should combine deterministic document processing, structured data storage, retrieval-augmented generation (RAG), a knowledge graph, and human-approved AI extraction.
+
+## Alignment With the Current Agent Setup
+
+This plan is aligned with the strengthened `AGENTS.md` rules for this repository:
+
+- Treat real construction project files as confidential by default.
+- Start with one-project, read-only ingestion before automation that mutates state.
+- Preserve citations, source references, hashes, timestamps, confidence, extraction method, and review status for every extracted project fact.
+- Do not let models directly rewrite canonical project state.
+- Represent timeline, task, contract, payment, liability, scope, and safety-impacting changes as proposed updates requiring human approval.
+- Use local-first parsing and least-data model calls: parse locally, retrieve relevant snippets, pass only necessary context to a model, and store outputs as cited proposals.
+- Do not commit real documents, emails, contracts, drawings, local databases, secrets, or personal data to this repository.
+- Use synthetic or sanitized sample data for fixtures, demos, and tests.
+
+The main adjustment from the original product idea is that the product should not be framed as a fully autonomous updater at the beginning. The safer target is an evidence-backed project control assistant: it detects likely changes, explains why, shows the source evidence, predicts impact, and waits for approval before changing timelines, tasks, obligations, or reports.
 
 ---
 
@@ -52,13 +67,14 @@ The recommended approach is not to blindly upload all documents into a model. In
    - Document register
    - Design decisions
    - Procurement deadlines
-6. What should be automatically updated?
+6. What should the system propose updates for?
    - Tasks
    - Milestones
    - Deadlines
    - Dependencies
    - Responsibility assignments
    - Risk status
+   - Low-risk metadata that may later be auto-updated after approval of the mode
 7. Existing task/project system integrations:
    - MS Planner
    - Jira
@@ -95,7 +111,7 @@ The recommended approach is not to blindly upload all documents into a model. In
    - Timeline/Gantt
    - Automated email summaries
    - Teams bot
-13. Should users approve changes before the system updates tasks/timelines, or should it auto-update?
+13. Which update classes must always require approval, and which low-risk metadata fields could later be auto-updated after the system proves accuracy?
 
 ---
 
@@ -352,6 +368,8 @@ Contracts require high caution. Extracted obligations should always include cita
 
 ### Option 1: Pass Whole Files Directly to an LLM
 
+This option is only acceptable for synthetic, sanitized, public, or explicitly approved documents. It is not the default for confidential project files.
+
 Good for:
 
 - small batches
@@ -370,7 +388,7 @@ Bad for:
 - repeatable extraction
 - timeline consistency
 
-Verdict: useful for prototypes, not enough for the full project brain.
+Verdict: useful for prototypes with approved data, not enough for the full project brain, and not acceptable for confidential project archives unless explicitly authorized.
 
 ### Option 2: Parse Files, Chunk Them, and Use RAG
 
@@ -412,9 +430,9 @@ Instead of only asking the model to summarize, ask it to output structured JSON:
 }
 ```
 
-Then validate the JSON, attach citations, and update the graph/timeline through controlled application logic.
+Then validate the JSON, attach citations, and create proposed graph/timeline updates through controlled application logic. The canonical project state is changed only after the relevant approval rule passes.
 
-Verdict: best approach for automatically updating the knowledge graph and timelines.
+Verdict: best approach for producing evidence-backed update proposals for the knowledge graph and timelines.
 
 ### Option 4: Fine-Tune a Model on the Project Files
 
@@ -643,9 +661,9 @@ When new email/minute/document arrives:
 1. classify source
 2. extract candidate changes
 3. compare against current project state
-4. create proposed update
-5. require human approval, at least initially
-6. apply to timeline/task system after approval
+4. create proposed update with source evidence, confidence, and impact notes
+5. require human approval for high-impact updates
+6. apply to timeline/task system only after approval
 7. log audit trail
 
 Examples:
@@ -705,10 +723,11 @@ Use three update modes:
 - meeting action items become draft tasks
 - user reviews daily digest
 
-### Mode 3: Auto-Update Trusted Fields
+### Mode 3: Auto-Update Trusted Low-Risk Metadata
 
 - only after confidence is proven
-- only for low-risk metadata
+- only for low-risk metadata, such as file classification, document register fields, duplicate detection, and non-authoritative tags
+- never for contract obligations, payment terms, deadlines, scope changes, safety decisions, liability conclusions, or real-person task assignments from ambiguous language
 
 Every task, deadline, obligation, or graph fact should be able to answer:
 
@@ -831,7 +850,7 @@ Start with a read-only system that ingests one project folder, extracts text/met
 - inventory files
 - classify document types
 - identify extraction difficulty
-- sample real documents
+- sample representative documents locally without committing them
 
 ### B. Domain Model
 
