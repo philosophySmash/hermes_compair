@@ -7,6 +7,8 @@ import json
 import sys
 
 from hermes_compair import __version__
+from hermes_compair.chunking import chunk_extracted_documents
+from hermes_compair.extract_text import extract_folder
 from hermes_compair.inventory import inventory_folder
 
 
@@ -33,6 +35,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Output inventory records as JSON.",
     )
+
+    extract_parser = subparsers.add_parser(
+        "extract",
+        help="Extract supported text and create cited chunks.",
+    )
+    extract_parser.add_argument("folder", help="Folder to extract from.")
+    extract_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output extracted documents and chunks as JSON.",
+    )
     return parser
 
 
@@ -54,6 +67,25 @@ def main(argv: list[str] | None = None) -> int:
         else:
             for document in documents:
                 print(f"{document.source_path}\t{document.document_type}\t{document.content_hash}")
+        return 0
+
+    if args.command == "extract":
+        try:
+            documents = extract_folder(args.folder)
+        except (FileNotFoundError, NotADirectoryError, ValueError) as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+
+        chunks = chunk_extracted_documents(documents)
+        payload = {
+            "documents": [document.to_dict() for document in documents],
+            "chunks": [chunk.to_dict() for chunk in chunks],
+        }
+        if args.json:
+            print(json.dumps(payload, indent=2, sort_keys=True))
+        else:
+            print(f"documents\t{len(documents)}")
+            print(f"chunks\t{len(chunks)}")
         return 0
 
     return 0
