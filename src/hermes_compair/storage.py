@@ -80,6 +80,22 @@ class ProjectStore:
                 """
             )
 
+    def clear_pipeline_outputs(self) -> None:
+        """Clear pipeline-owned MVP tables before replacing a run."""
+
+        self.init_db()
+        with self._connect() as connection:
+            connection.executescript(
+                """
+                DELETE FROM timeline_projection;
+                DELETE FROM graph_projection;
+                DELETE FROM proposals;
+                DELETE FROM facts;
+                DELETE FROM chunks;
+                DELETE FROM documents;
+                """
+            )
+
     def upsert_document(self, document: Document) -> str:
         """Insert or update a document, deduplicating by content hash when present."""
 

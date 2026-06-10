@@ -11,6 +11,7 @@ from hermes_compair.models import Chunk, ExtractedFact, SourceReference
 EXTRACTION_METHOD = "deterministic-pattern-v1"
 
 _ACTION_RE = re.compile(r"^\s*ACTION:\s*(?P<owner>.*?)\s*-\s*(?P<body>.+?)\s*$", re.IGNORECASE)
+_BULLET_ROLE_ACTION_RE = re.compile(r"^\s*-\s*(?P<owner>Synthetic [^:]+ role):\s*(?P<body>.+?)\s*$")
 _BY_RE = re.compile(r"^(?P<task>.+?)\s+by\s+(?P<date>.+?)\s*$", re.IGNORECASE)
 _ISO_DATE_RE = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 _MONTHS = (
@@ -75,11 +76,15 @@ def extract_facts_from_text(
 
 def _extract_action_fact(chunk: Chunk, line: str, line_number: int) -> list[ExtractedFact]:
     match = _ACTION_RE.match(line)
+    action_pattern = "explicit ACTION pattern"
+    if not match:
+        match = _BULLET_ROLE_ACTION_RE.match(line)
+        action_pattern = "synthetic role bullet pattern"
     if not match:
         return []
 
     owner = match.group("owner").strip()
-    body = match.group("body").strip()
+    body = match.group("body").strip().rstrip(".")
     task = body
     due_date_text = ""
 
@@ -112,7 +117,7 @@ def _extract_action_fact(chunk: Chunk, line: str, line_number: int) -> list[Extr
             confidence=confidence,
             extraction_method=EXTRACTION_METHOD,
             requires_review=requires_review,
-            extraction_notes="explicit ACTION pattern" if not requires_review else "explicit ACTION pattern with ambiguous owner or date",
+            extraction_notes=action_pattern if not requires_review else f"{action_pattern} with ambiguous owner or date",
             raw_evidence_text=evidence,
             attributes=attributes,
         )

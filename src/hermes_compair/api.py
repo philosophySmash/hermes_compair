@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 from importlib.resources import files
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
+from urllib.parse import quote
 
 from fastapi import FastAPI, Query
 from fastapi.responses import HTMLResponse
@@ -15,10 +17,20 @@ from hermes_compair.projections import build_graph_projection, build_timeline_pr
 from hermes_compair.storage import ProjectStore
 
 
+_READ_QUERIES = {
+    "documents": "SELECT payload_json FROM documents ORDER BY source_path, document_id",
+    "chunks": "SELECT payload_json FROM chunks ORDER BY chunk_id",
+    "facts": "SELECT payload_json FROM facts ORDER BY fact_id",
+    "proposals": "SELECT payload_json FROM proposals ORDER BY proposal_id",
+    "timeline_projection": "SELECT payload_json FROM timeline_projection ORDER BY timeline_item_id",
+    "graph_projection": "SELECT payload_json FROM graph_projection ORDER BY projection_type, projection_id",
+}
+
+
 def create_app(db_path: str | Path | None = None) -> FastAPI:
     """Create a read-only API app backed by the local project store."""
 
-    store = ProjectStore(db_path)
+    store = ProjectStore(db_path if db_path is not None else os.environ.get("HERMES_COMPAIR_DB_PATH"))
     api = FastAPI(
         title="hermes_compair read-only API",
         description="Local read-only API for cited project intelligence data.",
@@ -48,6 +60,14 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
 
     @api.get("/graph")
     def graph() -> dict[str, Any]:
+        stored_items = _graph_projection_items(store)
+        if stored_items:
+            return _public_payload(
+                {
+                    "nodes": [item for item in stored_items if "node_id" in item],
+                    "edges": [item for item in stored_items if "edge_id" in item],
+                }
+            )
         projection = build_graph_projection(
             _documents(store),
             _facts(store),
@@ -78,39 +98,42 @@ def _dashboard_html() -> str:
 
 
 def _documents(store: ProjectStore) -> list[dict[str, Any]]:
-    return _read_payloads(store, "documents", "source_path, document_id")
+    return _read_payloads(store, "documents")
 
 
 def _chunks(store: ProjectStore) -> list[dict[str, Any]]:
-    return _read_payloads(store, "chunks", "chunk_id")
+    return _read_payloads(store, "chunks")
 
 
 def _facts(store: ProjectStore) -> list[dict[str, Any]]:
-    return _read_payloads(store, "facts", "fact_id")
+    return _read_payloads(store, "facts")
 
 
 def _proposals(store: ProjectStore) -> list[dict[str, Any]]:
-    return _read_payloads(store, "proposals", "proposal_id")
+    return _read_payloads(store, "proposals")
 
 
 def _timeline_items(store: ProjectStore) -> list[dict[str, Any]]:
-    return _read_payloads(store, "timeline_projection", "timeline_item_id")
+    return _read_payloads(store, "timeline_projection")
 
 
-def _read_payloads(store: ProjectStore, table_name: str, order_by: str) -> list[dict[str, Any]]:
+def _graph_projection_items(store: ProjectStore) -> list[dict[str, Any]]:
+    return _read_payloads(store, "graph_projection")
+
+
+def _read_payloads(store: ProjectStore, table_name: str) -> list[dict[str, Any]]:
     if not store.db_path.exists():
         return []
     try:
-        connection = sqlite3.connect(f"file:{store.db_path}?mode=ro", uri=True)
-    except sqlite3.OperationalError:
+        query = _READ_QUERIES[table_name]
+        db_uri_path = quote(str(store.db_path), safe="/:\\")
+        connection = sqlite3.connect(f"file:{db_uri_path}?mode=ro", uri=True)
+    except (KeyError, sqlite3.OperationalError):
         return []
     connection.row_factory = sqlite3.Row
     with connection:
         try:
-            rows = connection.execute(
-                f"SELECT payload_json FROM {table_name} ORDER BY {order_by}",
-                (),
-            ).fetchall()
+            rows = connection.execute(query, ()).fetchall()
         except sqlite3.OperationalError:
             return []
     return [json.loads(row["payload_json"]) for row in rows]

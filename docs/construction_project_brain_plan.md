@@ -819,6 +819,21 @@ Do not start with a fully automatic project brain.
 
 Start with a read-only system that ingests one project folder, extracts text/metadata, builds a cited document Q&A layer, extracts deliverables/action items/dates from meeting minutes/contracts, and displays a draft timeline plus knowledge graph with human-approved updates.
 
+### Current Implemented MVP Subset
+
+As of the local prototype, the implemented subset is narrower than the full recommended MVP above:
+
+- local folder inventory for one project folder;
+- UTF-8 `.md`, `.txt`, and `.csv` text extraction;
+- citation-preserving chunking;
+- deterministic extraction for date mentions, explicit `ACTION:` lines, and role-based synthetic action bullets;
+- reviewable proposal creation from cited facts;
+- SQLite persistence for documents, chunks, facts, proposals, graph projection items, and timeline projection items;
+- read-only FastAPI endpoints and a minimal local dashboard;
+- a repeatable end-to-end smoke test over `samples/synthetic_project`.
+
+The prototype still excludes OCR, production PDF/DOCX/XLSX/email parsing, vector embeddings, semantic RAG chat, cloud LLM extraction, SharePoint/email/cloud integrations, authentication, multi-user permissions, and automatic application of proposed updates.
+
 ### MVP Features
 
 1. Folder crawler
