@@ -40,10 +40,10 @@ Start with one project folder and build a read-only prototype that can:
 
 ## Test and CLI Smoke Checks
 
-Run the package smoke test with pytest. Pytest is not installed or declared by this project, so install pytest in your local development environment before running this command:
+Run the unittest suite with:
 
 ```bash
-PYTHONPATH=src python3 -m pytest tests/test_smoke.py -q
+PYTHONPATH=src python3 -m unittest discover -s tests -q
 ```
 
 Show CLI help with:
@@ -51,6 +51,33 @@ Show CLI help with:
 ```bash
 PYTHONPATH=src python3 -m hermes_compair.cli --help
 ```
+
+## Read-Only Local API
+
+The MVP exposes a local FastAPI app for read-only access to stored project brain data. It does not ingest files, apply proposals, call external services, or mutate canonical project state through API endpoints.
+
+Install the project dependencies in a local virtual environment, for example with uv:
+
+```bash
+uv sync
+```
+
+Run the API from the repository root with:
+
+```bash
+PYTHONPATH=src uvicorn hermes_compair.api:app --host 127.0.0.1 --port 8000
+```
+
+Available read-only endpoints:
+
+- `GET /health` - health check with read-only status.
+- `GET /documents` - list stored document metadata.
+- `GET /chunks/search?q=term` - search stored chunks by text.
+- `GET /graph` - build a cited graph projection from stored documents, facts, and proposals.
+- `GET /timeline` - list stored timeline projection items or build them from stored proposals.
+- `GET /proposals` - list reviewable proposed updates.
+
+API responses preserve stored citations and evidence fields. Absolute local source paths are reduced to file-name source identifiers before being returned.
 
 ## GitHub Upload Later
 
