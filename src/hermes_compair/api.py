@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
+from importlib.resources import files
 from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any
 
 from fastapi import FastAPI, Query
+from fastapi.responses import HTMLResponse
 
 from hermes_compair.projections import build_graph_projection, build_timeline_projection
 from hermes_compair.storage import ProjectStore
@@ -22,6 +24,14 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         description="Local read-only API for cited project intelligence data.",
         version="0.1.0",
     )
+
+    @api.get("/", response_class=HTMLResponse)
+    def dashboard_root() -> str:
+        return _dashboard_html()
+
+    @api.get("/ui", response_class=HTMLResponse)
+    def dashboard_ui() -> str:
+        return _dashboard_html()
 
     @api.get("/health")
     def health() -> dict[str, Any]:
@@ -57,6 +67,14 @@ def create_app(db_path: str | Path | None = None) -> FastAPI:
         return {"proposals": _public_payload(_proposals(store))}
 
     return api
+
+
+def _dashboard_html() -> str:
+    return (
+        files("hermes_compair")
+        .joinpath("static", "index.html")
+        .read_text(encoding="utf-8")
+    )
 
 
 def _documents(store: ProjectStore) -> list[dict[str, Any]]:

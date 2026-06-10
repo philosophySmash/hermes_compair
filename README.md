@@ -79,6 +79,12 @@ Available read-only endpoints:
 
 API responses preserve stored citations and evidence fields. Absolute local source paths are reduced to file-name source identifiers before being returned.
 
+## Local Prototype Dashboard
+
+A minimal static dashboard is available at `src/hermes_compair/static/index.html`. It is a local prototype for review only. It reads the local API endpoints for document register, proposal list, timeline data, and graph data. It does not approve contract changes, does not apply project changes, and does not provide legal advice or legal authority.
+
+Use it by running the read-only API, then visiting `/ui` in a browser on the same local server. The page uses only relative local endpoint paths and does not load external CDN assets.
+
 ## GitHub Upload Later
 
 This repo is initialized locally with Git and can be connected to GitHub later:
