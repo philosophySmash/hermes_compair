@@ -1,5 +1,6 @@
 import hashlib
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -9,6 +10,9 @@ from hermes_compair.storage import ProjectStore
 
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tests"))
+from asgi_test_helper import request
+
 SYNTHETIC_PROJECT = ROOT / "samples" / "synthetic_project"
 
 
@@ -52,13 +56,11 @@ class SyntheticProjectE2ETests(unittest.TestCase):
             self.assertTrue(any(item["item_type"] == "task_assignment" for item in timeline_items))
             self.assertTrue(all(proposal["requires_review"] for proposal in proposals))
 
-            from fastapi.testclient import TestClient
-
             from hermes_compair.api import create_app
 
-            client = TestClient(create_app(db_path))
-            dashboard_graph = client.get("/graph").json()
-            dashboard_timeline = client.get("/timeline").json()
+            app = create_app(db_path)
+            dashboard_graph = request(app, "GET", "/graph").json()
+            dashboard_timeline = request(app, "GET", "/timeline").json()
             self.assertGreater(len(dashboard_graph["nodes"]), 0)
             self.assertGreater(len(dashboard_graph["edges"]), 0)
             self.assertGreater(len(dashboard_timeline["items"]), 0)

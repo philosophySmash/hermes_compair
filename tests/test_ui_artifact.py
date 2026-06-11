@@ -7,6 +7,10 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "tests"))
+
+from asgi_test_helper import request
+
 UI_PATH = ROOT / "src" / "hermes_compair" / "static" / "index.html"
 README_PATH = ROOT / "README.md"
 
@@ -64,15 +68,11 @@ class LocalDashboardArtifactTests(unittest.TestCase):
         self.assertNotIn(chr(8211), combined)
 
     def test_api_serves_static_dashboard_without_mutating_database(self):
-        from fastapi.testclient import TestClient
-
         from hermes_compair.api import create_app
 
         with tempfile.TemporaryDirectory() as tmp:
             db_path = Path(tmp) / "missing" / "project.db"
-            client = TestClient(create_app(db_path))
-
-            response = client.get("/ui")
+            response = request(create_app(db_path), "GET", "/ui")
 
             self.assertEqual(response.status_code, 200)
             self.assertIn("Local prototype", response.text)

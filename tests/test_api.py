@@ -5,9 +5,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "tests"))
 
-from fastapi.testclient import TestClient
-
+from asgi_test_helper import request
 from hermes_compair.api import create_app
 from hermes_compair.models import Chunk, Document, ExtractedFact, Proposal, SourceReference
 from hermes_compair.storage import ProjectStore
@@ -17,9 +17,7 @@ class ReadOnlyApiTests(unittest.TestCase):
     def test_health_reports_read_only_status(self):
         with tempfile.TemporaryDirectory() as tmp:
             app = create_app(Path(tmp) / "project.db")
-            client = TestClient(app)
-
-            response = client.get("/health")
+            response = request(app, "GET", "/health")
 
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), {"status": "ok", "read_only": True})
@@ -39,9 +37,7 @@ class ReadOnlyApiTests(unittest.TestCase):
                 )
             )
             app = create_app(db_path)
-            client = TestClient(app)
-
-            response = client.get("/documents")
+            response = request(app, "GET", "/documents")
 
             self.assertEqual(response.status_code, 200)
             payload = response.json()
@@ -81,9 +77,7 @@ class ReadOnlyApiTests(unittest.TestCase):
                 )
             )
             app = create_app(db_path)
-            client = TestClient(app)
-
-            response = client.get("/chunks/search", params={"q": "CONCRETE"})
+            response = request(app, "GET", "/chunks/search?q=CONCRETE")
 
             self.assertEqual(response.status_code, 200)
             payload = response.json()
@@ -109,9 +103,7 @@ class ReadOnlyApiTests(unittest.TestCase):
                 )
             )
             app = create_app(db_path)
-            client = TestClient(app)
-
-            response = client.get("/graph")
+            response = request(app, "GET", "/graph")
 
             self.assertEqual(response.status_code, 200)
             payload_text = str(response.json())
@@ -174,12 +166,11 @@ class ReadOnlyApiTests(unittest.TestCase):
                 )
             )
             app = create_app(db_path)
-            client = TestClient(app)
 
-            graph = client.get("/graph")
-            timeline = client.get("/timeline")
-            proposals = client.get("/proposals")
-            forbidden_post = client.post("/proposals", json={"unsafe": True})
+            graph = request(app, "GET", "/graph")
+            timeline = request(app, "GET", "/timeline")
+            proposals = request(app, "GET", "/proposals")
+            forbidden_post = request(app, "POST", "/proposals", json_body={"unsafe": True})
 
             self.assertEqual(graph.status_code, 200)
             self.assertEqual(timeline.status_code, 200)
@@ -192,9 +183,7 @@ class ReadOnlyApiTests(unittest.TestCase):
     def test_chunk_search_requires_query(self):
         with tempfile.TemporaryDirectory() as tmp:
             app = create_app(Path(tmp) / "project.db")
-            client = TestClient(app)
-
-            response = client.get("/chunks/search")
+            response = request(app, "GET", "/chunks/search")
 
             self.assertEqual(response.status_code, 422)
 
@@ -202,9 +191,7 @@ class ReadOnlyApiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             db_path = Path(tmp) / "missing" / "project.db"
             app = create_app(db_path)
-            client = TestClient(app)
-
-            response = client.get("/documents")
+            response = request(app, "GET", "/documents")
 
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), {"documents": []})
